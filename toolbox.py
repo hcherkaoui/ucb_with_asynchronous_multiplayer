@@ -50,6 +50,8 @@ class GaussianKBanditPlayers:
 
     def compute_reward(self, all_k):
 
+        all_k = list(all_k)
+
         _, c = np.unique(all_k, return_counts=True)
 
         if any(c > 1):
@@ -62,8 +64,7 @@ class GaussianKBanditPlayers:
             return no_noise_y + noise, no_noise_y
 
     def update_agent_stats(self, agent_names, all_y, all_no_noise_y):
-        y_max = np.max(self.mu)
-        y_min = np.min(self.mu)
+        y_max, y_min = np.max(self.mu), np.min(self.mu)
         for agent_name, y, no_noise_y in zip(agent_names, all_y, all_no_noise_y):
             self._update_agent_stats(agent_name, y, no_noise_y, y_max, y_min)
 

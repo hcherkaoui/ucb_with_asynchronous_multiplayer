@@ -6,6 +6,7 @@
 import os
 import time
 import copy
+import itertools
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -22,10 +23,10 @@ print(f"[Main] Experiment: {os.path.basename(__file__)}.")
 
 t0_total = time.time()
 
-fontsize = 18
+fontsize = 16
 MAX_RANDINT = 1000
 seed = 0
-n_trials = 250
+n_trials = 100
 trial_to_plot = [0, 42]
 n_jobs = -2
 verbose = False
@@ -40,20 +41,22 @@ if not os.path.isdir(plot_dir):
 ###############################################################################
 # Experiment setting
 ###############################################################################
-T = 5000
+T = 1000
 mu_offset = 1.0
-mu = mu_offset + np.array([0.5, 0.4, 0.1, 0.1, 0.2, 0.3])  # each mu should be higher than 0
-N = 20
+mu = mu_offset + np.array([0.5, 0.45, 0.1, 0.2, 0.3])  # each mu should be higher than 0
+mu_min = np.sort([np.max(mu) - mu_i for mu_i in mu])[1]
+N = 10
 sigma = 1.0
 delta = 0.1
+R_T_max = T * (np.max(mu) - np.min(mu))
 
 ###############################################################################
 # Main
 ###############################################################################
 print(f"[Main] Main experiment running:")
 
-l_p = np.linspace(0.1, 1.0, 10)
-l_p_to_plot_evolution = l_p[0:4]
+l_p = np.linspace(0.1, 1.0, 5)
+l_p_to_plot_evolution = l_p[:1]
 all_results = dict()
 for p in l_p:
 
@@ -90,12 +93,14 @@ for p in l_p:
 
     fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(5.0, 2.0), squeeze=False, sharey=True)
 
-    axis[0, 0].hist(all_R_T, bins=int(n_trials/5), color='tab:blue', alpha=0.5)
-    axis[0, 0].axvline(T, c='black', lw=1.5, alpha=0.2)
+    _, _, bins = plt.hist(all_R_T, bins=5)
+    axis[0, 0].bar_label(bins, color='tab:blue', alpha=0.5)
+    axis[0, 0].axvline(R_T_max, c='black', lw=1.5, alpha=0.2)
 
     axis[0, 0].set_xlabel(r'$R_T$', fontsize=int(0.75*fontsize))
     axis[0, 0].set_ylabel('Count', rotation=90, fontsize=int(0.75*fontsize))
-    axis[0, 0].set_title(r'$p=' + f'{p:.3f}' + '$', fontsize=fontsize)
+    title = f"N={N} K={len(mu)} p={p:.2f} " + r"$\Delta_{\mu}^{\min}$= " + f"{mu_min:.2f}"
+    axis[0, 0].set_title(title, fontsize=fontsize)
 
     all_fig[p] = fig
     all_axis[p] = axis
@@ -106,17 +111,18 @@ for p in l_p:
     _, x_lim = all_axis[p][0, 0].get_xlim()
     _, y_lim = all_axis[p][0, 0].get_ylim()
 
-    l_x_lim.append(1.1 * x_lim)
-    l_y_lim.append(1.1 * y_lim)
+    l_x_lim.append(x_lim)
+    l_y_lim.append(y_lim)
 
 x_lim_max = np.max(l_x_lim)
 y_lim_max = np.max(l_y_lim)
 
 for p in l_p:
 
-    all_axis[p][0, 0].set_xlim(0.0, x_lim_max)
-    all_axis[p][0, 0].set_ylim(0.0, y_lim_max)
-    all_axis[p][0, 0].text(T, 0.8 * y_lim_max, f"T={T}", color='tab:gray', fontsize=int(0.5*fontsize))
+    all_axis[p][0, 0].set_xlim(0.0, 1.1 * x_lim_max)
+    all_axis[p][0, 0].set_ylim(0.0, 1.1 * y_lim_max)
+    all_axis[p][0, 0].text(R_T_max, 0.25 * y_lim_max, "$R_T^{\mathrm{max}}="+f"{R_T_max:.1f}"+"$",
+                           color='tab:gray', rotation=90, fontsize=int(0.4*fontsize))
 
     all_fig[p].tight_layout()
 
