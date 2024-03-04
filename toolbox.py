@@ -1,5 +1,8 @@
 """Toolbox module."""
 
+# Authors: Hamza Cherkaoui <hamza.cherkaoui@huawei.com>
+# Authors: Hugo Richard <research.hugo.richard@gmail.com>
+
 import numbers
 import numpy as np
 from bandpy._checks import check_N_and_agent_names, check_random_state, check_actions
@@ -58,14 +61,15 @@ class GaussianKBanditPlayers:
             no_noise_y = np.array([self.mu[k] for k in all_k])
             return no_noise_y + noise, no_noise_y
 
-    def update_agent_stats(self, all_y, all_no_noise_y):
+    def update_agent_stats(self, agent_names, all_y, all_no_noise_y):
         y_max = np.max(self.mu)
         y_min = np.min(self.mu)
-        for i, (y, no_noise_y) in enumerate(zip(all_y, all_no_noise_y)):
-            self._update_agent_stats(i, y, no_noise_y, y_max, y_min)
+        for agent_name, y, no_noise_y in zip(agent_names, all_y, all_no_noise_y):
+            self._update_agent_stats(agent_name, y, no_noise_y, y_max, y_min)
 
-    def _update_agent_stats(self, i, y, no_noise_y, y_max, y_min):
+    def _update_agent_stats(self, agent_name, y, no_noise_y, y_max, y_min):
         """Update all statistic as listed in __init__ doc."""
+        i = int(agent_name.split('_')[1])
         self.s_t[i][self.t - 1] = y
         self.no_noise_s_t[i][self.t - 1] = no_noise_y
         self.best_s_t[i][self.t - 1] = y_max
@@ -78,14 +82,12 @@ class GaussianKBanditPlayers:
 
         action = check_actions(action)
 
-        all_k = [k for k in action.values()]
+        all_y, all_no_noise_y = self.compute_reward(action.values())
 
-        all_y, all_no_noise_y = self.compute_reward(all_k)
-
-        self.update_agent_stats(all_y, all_no_noise_y)
+        self.update_agent_stats(action.keys(), all_y, all_no_noise_y)
 
         info, observation = dict(), dict()
-        for agent_name, k, y, no_noise_y in zip(action.keys(), all_k, all_y, all_no_noise_y):
+        for agent_name, k, y, no_noise_y in zip(action.keys(), action.values(), all_y, all_no_noise_y):
             observation[agent_name] = {"last_arm_pulled": k,
                                        "last_reward": y,
                                        "last_no_noise_reward": no_noise_y,
@@ -126,6 +128,7 @@ class IndependantController:
 
         self.t = -1  # to be synchronous with the env count
         self.T_i = np.zeros((N,), dtype=int)
+        self.t_i = {i: [] for i in range(self.N)}
 
         self.seed = seed
         self.rng = check_random_state(seed)
@@ -163,6 +166,8 @@ class IndependantController:
     def _choose_agent(self):
         awake_agent_i = [i for i in range(self.N) if self.rng.uniform(0, 1) < self.p]
         self.T_i[awake_agent_i] += 1
+        for i in awake_agent_i:
+            self.t_i[i].append(self.t)
         return [f"agent_{i}" for i in awake_agent_i]
 
     def act(self, observation, reward, info):
