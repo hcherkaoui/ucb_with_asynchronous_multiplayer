@@ -42,10 +42,12 @@ if not os.path.isdir(plot_dir):
 # Experiment setting
 ###############################################################################
 T = 1000
-mu_offset = 1.0
-mu = mu_offset + np.array([0.5, 0.45, 0.1, 0.2, 0.3])  # each mu should be higher than 0
+K = 20
+N = 5
+sigma_arm = 0.2
+mu_offset = 2.0
+mu = mu_offset + sigma_arm * rng.randn(K)  # each mu should be higher than 0 with high prob.
 mu_min = np.sort([np.max(mu) - mu_i for mu_i in mu])[1]
-N = 10
 sigma = 1.0
 delta = 0.1
 R_T_max = T * (np.max(mu) - np.min(mu))
@@ -148,7 +150,8 @@ for p in l_p_to_plot_evolution:
 
         for n in range(N):
 
-            axis[n, i].plot(env.no_noise_s_t[n], c='tab:blue', lw=3.0, alpha=0.5)
+            axis[n, i].plot(env.no_noise_s_t[n], linestyle='', marker='o', c='tab:blue',
+                            lw=3.0, alpha=0.5)
             axis[n, i].set_ylim(0.0, np.max(mu))
 
             for t_c in env.t_collision:
