@@ -1,3 +1,5 @@
-figures/
+_figures_async_players/
 __cache__/
 __pycache__
+*.pdf
+*.png
