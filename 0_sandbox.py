@@ -6,7 +6,6 @@
 import os
 import time
 import copy
-import itertools
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -23,11 +22,11 @@ print(f"[Main] Experiment: {os.path.basename(__file__)}.")
 
 t0_total = time.time()
 
-fontsize = 16
+fontsize = 17
 MAX_RANDINT = 1000
 seed = 0
 n_trials = 100
-trial_to_plot = [0, 42]
+trial_to_plot = [44, 14, 5]
 n_jobs = -2
 verbose = False
 rng = utils.check_random_state(seed)
@@ -57,8 +56,8 @@ R_T_max = T * (np.max(mu) - np.min(mu))
 ###############################################################################
 print(f"[Main] Main experiment running:")
 
-l_p = np.linspace(0.1, 1.0, 5)
-l_p_to_plot_evolution = l_p[:1]
+l_p = np.linspace(0.1, 1.0, 6)
+l_p_to_plot_evolution = l_p
 all_results = dict()
 for p in l_p:
 
@@ -93,11 +92,11 @@ for p in l_p:
     results = all_results[p]
     all_R_T = [np.sum(env.r_t[n][env.r_t[n] != -np.inf]) for n in range(N) for _, env in results]
 
-    fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(5.0, 2.0), squeeze=False, sharey=True)
+    fig, axis = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 2.5), squeeze=False, sharey=True)
 
     _, _, bins = plt.hist(all_R_T, bins=5)
     axis[0, 0].bar_label(bins, color='tab:blue', alpha=0.5)
-    axis[0, 0].axvline(R_T_max, c='black', lw=1.5, alpha=0.2)
+    axis[0, 0].axvline(R_T_max, c='tab:gray', lw=1.5, alpha=0.2)
 
     axis[0, 0].set_xlabel(r'$R_T$', fontsize=int(0.75*fontsize))
     axis[0, 0].set_ylabel('Count', rotation=90, fontsize=int(0.75*fontsize))
@@ -133,7 +132,7 @@ for p in l_p:
         all_fig[p].savefig(filepath, dpi=dpi)
         print(f"[Main]   Saving {filepath}.")
 
-## R_t evolution
+## s_t evolution
 
 for p in l_p_to_plot_evolution:
 
@@ -141,8 +140,8 @@ for p in l_p_to_plot_evolution:
 
     ncols = len(trial_to_plot)
     nrows = N
-    fig, axis = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 6.0, nrows * 2.5),
-                                squeeze=False, sharex=True, sharey=True, tight_layout=True)
+    fig, axis = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 2.5, nrows * 2.0),
+                             squeeze=False, sharex=True, sharey=True, tight_layout=True)
 
     for i, j in enumerate(trial_to_plot):
 
@@ -160,11 +159,62 @@ for p in l_p_to_plot_evolution:
     for i, j in enumerate(trial_to_plot):
         axis[N-1, i].set_xlabel(f'trial-{j}', fontsize=fontsize)
 
-    fig.text(0.0, 0.5, 'Agent', va='center', rotation='vertical', fontsize=fontsize)
+    for n in range(N):
+        axis[n, 0].set_ylabel(f'agent-{n}', fontsize=fontsize)
 
+    title = f"N={N} K={len(mu)} p={p:.2f} " + r"$\Delta_{\mu}^{\min}$= " + f"{mu_min:.2f}"
+    fig.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
 
     for filename in [f'evolution_s_t__p_{p:.3f}.pdf', f'evolution_s_t__p_{p:.3f}.png']:
+        filepath = os.path.join(plot_dir, filename)
+        fig.savefig(filepath, dpi=dpi)
+        print(f"[Main]   Saving {filepath}.")
+
+## R_t evolution
+
+for p in l_p_to_plot_evolution:
+
+    results = all_results[p]
+
+    ncols = len(trial_to_plot)
+    nrows = 1
+    fig, axis = plt.subplots(nrows=nrows, ncols=ncols, figsize=(ncols * 2.5, 2.0),
+                             squeeze=False, sharex=True, sharey=True, tight_layout=True)
+
+    for i, j in enumerate(trial_to_plot):
+
+        env = results[j][1]
+
+        all_r_t = []
+        for n in range(N):
+            all_r_t.append(env.no_noise_r_t[n])
+        all_r_t = np.array(all_r_t)
+
+        mean_R_t = np.zeros((T,))
+        for t in range(1, T):
+
+            mean_r_t = np.mean(all_r_t[:, t][all_r_t[:, t] != -np.inf])
+
+            if not np.isnan(mean_r_t):
+                mean_R_t[t] = mean_R_t[t-1] + mean_r_t
+
+            else: mean_R_t[t] = mean_R_t[t-1]
+
+        axis[0, i].plot(mean_R_t, c='tab:blue', lw=3.5, alpha=0.5)
+        axis[0, i].plot(np.arange(T), c='tab:gray', lw=2.5, alpha=0.5)
+
+        for t_c in env.t_collision:
+            axis[0, i].axvline(t_c, c='black', lw=1.5, alpha=0.2)
+
+    for i, j in enumerate(trial_to_plot):
+        axis[0, i].set_xlabel(f'trial-{j}', fontsize=fontsize)
+
+    title = f"N={N} K={len(mu)} p={p:.2f} " + r"$\Delta_{\mu}^{\min}$= " + f"{mu_min:.2f}"
+    fig.suptitle(title, fontsize=fontsize)
+    fig.tight_layout()
+
+    for filename in [f'evolution_R_t__p_{p:.3f}.pdf', f'evolution_R_t__p_{p:.3f}.png']:
         filepath = os.path.join(plot_dir, filename)
         fig.savefig(filepath, dpi=dpi)
         print(f"[Main]   Saving {filepath}.")
