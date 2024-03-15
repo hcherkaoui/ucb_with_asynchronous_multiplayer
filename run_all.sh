@@ -4,8 +4,8 @@ echo
 start_time=`date +%s.%N`
 
 echo "##############################################################################"
-echo "[Main] Sandbox"
-python3 0_sandbox.py
+echo "[Main] Experiment: 'Sandbox'"
+python3 -W ignore 0_sandbox.py
 echo
 
 echo "##############################################################################"
@@ -15,10 +15,10 @@ for FILE in _figures_async_players/*.pdf; do
 done
 echo
 
-storage_dir='/mnt/d/'
+storage_dir='/mnt/d'
 if [ -d $storage_dir ]; then
   echo "##############################################################################"
-  printf "[Main] Sending figures to %s \n" $storage_dirx
+  printf "[Main] Sending figures to %s \n" $storage_dir
   cp -vr _figures_async_players/ $storage_dir
   echo
 fi
